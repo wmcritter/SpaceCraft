@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -12,13 +11,14 @@ public class Chunk : MonoBehaviour
     public static List<Chunk> chunksWaiting = new List<Chunk>();
     public static List<Chunk> Chunks = new List<Chunk>();
 
-    public static int _TextureMapRows = 1;
-    public static int _TextureMapColumns = 5;
+    public static int _TextureMapRows = 8;
+    public static int _TextureMapColumns = 8;
 
     public GameObject spawnerPrefab;
 
     public int TextureMapRows;
     public int TextureMapColumns;
+    //public Transform cube_prefab;
 
     public BlockType[,,] map;
     public Mesh visualMesh;
@@ -29,9 +29,9 @@ public class Chunk : MonoBehaviour
     private GameObject player;
     private ItemDictionary itemDictionary;
     protected bool initialized = false;
-    //private bool hasSpawner;
+    private bool hasSpawner;
     //private static GameObject sun;
-    private static Vector3 sunPosition = new Vector3(0, 0, 0);
+    //private static Vector3 sunPosition = new Vector3(0, 0, 0);
     private SavedChunk _SavedChunk;
 
     //private static float maxNoise;
@@ -52,9 +52,10 @@ public class Chunk : MonoBehaviour
 
     void Awake()
     {
+        player = GameObject.FindGameObjectWithTag("Player");
+        itemDictionary = GameObject.FindGameObjectWithTag("ItemDictionary").GetComponent<ItemDictionary>();
         _TextureMapRows = TextureMapRows;
         _TextureMapColumns = TextureMapColumns;
-
     }
 
     // Use this for initialization
@@ -62,11 +63,9 @@ public class Chunk : MonoBehaviour
     {
         Chunks.Add(this);
 
-        player = GameObject.FindGameObjectWithTag("Player");// Tags.player);
-        itemDictionary = GameObject.FindGameObjectWithTag("ItemDictionary").GetComponent<ItemDictionary>();
-
         //if (sun == null)
         //			sun = GameObject.FindGameObjectWithTag(Tags.sun);
+
         meshRenderer = GetComponent<MeshRenderer>();
         meshCollider = GetComponent<MeshCollider>();
         meshFilter = GetComponent<MeshFilter>();
@@ -96,8 +95,8 @@ public class Chunk : MonoBehaviour
 
             UnityEngine.Random.InitState(123);// GameController.currentController.seed;
             Vector3 grain0Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
-            //Vector3 grain1Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
-            //Vector3 grain2Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
+            Vector3 grain1Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
+            Vector3 grain2Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
 
             for (int x = 0; x < _ChunkSize; x++)
             {
@@ -105,8 +104,8 @@ public class Chunk : MonoBehaviour
                 {
                     for (int z = 0; z < _ChunkSize; z++)
                     {
-                        map[x, y, z] = GetTheoreticalBrick(new Vector3(x, y, z) + transform.position, grain0Offset/*, grain1Offset, grain2Offset*/);
-                        /*if (map[x, y, z] == BlockType.MobSpawner)
+                        map[x, y, z] = GetTheoreticalBrick(new Vector3(x, y, z) + transform.position, grain0Offset, grain1Offset, grain2Offset);
+                        /*if (map[x, y, z] == ItemType.MobSpawner)
                         {
                             if (!hasSpawner)
                             {
@@ -144,13 +143,13 @@ public class Chunk : MonoBehaviour
         UnityEngine.Random.InitState(123);// GameController.currentController.seed;
 
         Vector3 grain0Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
-        //Vector3 grain1Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
-        //Vector3 grain2Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
+        Vector3 grain1Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
+        Vector3 grain2Offset = new Vector3(UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000, UnityEngine.Random.value * 10000);
 
-        return GetTheoreticalBrick(pos, grain0Offset/*, grain1Offset, grain2Offset*/);
+        return GetTheoreticalBrick(pos, grain0Offset, grain1Offset, grain2Offset);
     }
 
-    public static BlockType GetTheoreticalBrick(Vector3 pos, Vector3 offset0)
+    public static BlockType GetTheoreticalBrick(Vector3 pos, Vector3 offset0, Vector3 offset1, Vector3 offset2)
     {
         BlockType result = BlockType.None;
 
@@ -160,12 +159,10 @@ public class Chunk : MonoBehaviour
 
         if (noiseValue > 0.2f)
         {
-            //float distanceFromSun = Vector3.Distance(pos, sunPosition);// sun.transform.position);
-            //float clusterValue = CalculateNoiseValue(pos, offset2,  (distanceFromSun/50000));//0.02f);
-            //int biomeIndex = Mathf.FloorToInt(clusterValue * MyWorld.currentWorld.Biomes.Length);
-            //clusterValue
-            float distanceFromSun = (pos - sunPosition).magnitude;
-
+            float distanceFromSun = Vector3.Distance(pos, Vector3.zero);// sun.transform.position);
+                                                                       //float clusterValue = CalculateNoiseValue(pos, offset2,  (distanceFromSun/50000));//0.02f);
+                                                                       //int biomeIndex = Mathf.FloorToInt(clusterValue * MyWorld.currentWorld.Biomes.Length);
+                                                                       //clusterValue
             int biomeIndex = 0; //not allowed
                                 //if (distanceFromSun > MyWorld.currentWorld.hotBiomeDistance)
                                 //biomeIndex = 0; //hot
@@ -244,7 +241,7 @@ public class Chunk : MonoBehaviour
             else if (biomeIndex == 0)//hot
             {
                 result = BlockType.Sand;
-                //result = (ItemType)Mathf.FloorToInt(UnityEngine.Random.Range(1, (_TextureMapColumns * /*_TextureMapRows*/1) + 1));
+                //result = (BlockType)Mathf.FloorToInt(UnityEngine.Random.Range(1, (_TextureMapColumns * /*_TextureMapRows*/1) + 1));
                 if (noiseValue > 0.21)
                 {
                     layer = BrickLayerCondition.BelowGroundLevel;
@@ -276,7 +273,7 @@ public class Chunk : MonoBehaviour
             else if (biomeIndex == 2) //cold
             {
                 result = BlockType.Ice;
-                //result = (ItemType)Mathf.FloorToInt(UnityEngine.Random.Range(1, (_TextureMapColumns * /*_TextureMapRows*/1) + 1));
+                //result = (BlockType)Mathf.FloorToInt(UnityEngine.Random.Range(1, (_TextureMapColumns * /*_TextureMapRows*/1) + 1));
                 if (noiseValue > 0.21)
                 {
                     layer = BrickLayerCondition.BelowGroundLevel;
@@ -309,7 +306,7 @@ public class Chunk : MonoBehaviour
             /*Biome b = MyWorld.currentWorld.Biomes[biomeIndex];
 			result = b.GetBrick(pos, noiseValue, layer);
 			{
-				if (result == ItemType.None)
+				if (result == BlockType.None)
 					Debug.Log(string.Format("No Brick found for Biome {0}, Layer {1}, Noise valuse {2}", b.name, layer, noiseValue));
 			}*/
         }
@@ -351,7 +348,7 @@ public class Chunk : MonoBehaviour
                     //if (map[x,y,z] == 0) continue;
 
                     BlockType brick = (BlockType)map[x, y, z];
-                    //if (brick == BlockType.None || brick == BlockType.MobSpawner) continue;
+                    if (brick == BlockType.None /*|| brick == BlockType.MobSpawner*/) continue;
 
                     int maxtextures = TextureMapColumns * TextureMapRows;
                     if ((int)brick > maxtextures)
@@ -495,7 +492,7 @@ public class Chunk : MonoBehaviour
     public virtual bool IsTransparent(int x, int y, int z)
     {
         BlockType brick = GetBrick(x, y, z);
-        return brick == BlockType.None;// || brick == BlockType.MobSpawner;
+        return brick == BlockType.None /*|| brick == BlockType.MobSpawner*/;
         /*switch(brick)
 		{
 			case 0: return true;
@@ -535,12 +532,12 @@ public class Chunk : MonoBehaviour
                 else
                     return GetTheoreticalBrick(worldPos);
             }
-            return chunk.GetBlock(worldPos);
+            return chunk.GetBrick(worldPos);
         }
         return map[x, y, z];
     }
 
-    public virtual BlockType GetBlock(Vector3 worldPos)
+    public virtual BlockType GetBrick(Vector3 worldPos)
     {
         worldPos -= transform.position;
         int x = Mathf.FloorToInt(worldPos.x);
@@ -587,26 +584,22 @@ public class Chunk : MonoBehaviour
         z = Mathf.FloorToInt(worldPos.z);
     }
 
-    //will be called from command, so it should only run on server
-    public void DestroyBlock(Vector3 worldPos)
+    public void DestroyBrick(BlockType brick, Vector3 worldPos)
     {
         Vector3 pos = (worldPos - transform.position);
         int x, y, z;
         WorldPosToMapPos(pos, out x, out y, out z);
         if (!IsValidMapLocation(x, y, z)) return;
-        BlockType block = map[x, y, z];
-        GameObject go = itemDictionary.GetDroppedItemPrefab(block);
+
+        GameObject go = itemDictionary.GetDroppedItemPrefab(brick);
         var cube = (GameObject)Instantiate(go,
                                new Vector3(Mathf.FloorToInt(worldPos.x) + 0.5f, Mathf.FloorToInt(worldPos.y) + 0.5f, Mathf.FloorToInt(worldPos.z) + 0.5f),
                      Quaternion.identity);
-        
-        cube.GetComponent<DroppedItem>().Item = new InventoryItem(ItemDictionary.currentDictionary.GetItemDefinition(block));
+        //cube.GetComponent<DroppedItem>().Items.Push (new InventoryItem(brick, true));
+        cube.GetComponent<DroppedItem>().Item = new InventoryItem(ItemDictionary.currentDictionary.GetItemDefinition(brick));
 
-        //spawn the dropped item on clients
-        NetworkServer.Spawn(go);
-
-        SetBlock(BlockType.None, x, y, z);
-        
+        SetBrick(BlockType.None, x, y, z);
+        //SaveBrick(BlockType.None, x, y, z);
     }
 
     private bool IsValidMapLocation(int x, int y, int z)
@@ -614,14 +607,14 @@ public class Chunk : MonoBehaviour
         return !(x < 0) || (y < 0) || (z < 0) || (x >= _ChunkSize) || (y >= _ChunkSize) || (z >= _ChunkSize);
     }
 
-    public bool SetBlock(BlockType brick, Vector3 worldPos)
+    public bool SetBrick(BlockType brick, Vector3 worldPos)
     {
         //Debug.Log(string.Format("Set brick {0} at {1}", brick, worldPos));
         worldPos -= transform.position;
-        return SetBlock(brick, Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y), Mathf.FloorToInt(worldPos.z));
+        return SetBrick(brick, Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y), Mathf.FloorToInt(worldPos.z));
     }
 
-    public bool SetBlock(BlockType brick, int x, int y, int z)
+    public bool SetBrick(BlockType brick, int x, int y, int z)
     {
         //Debug.Log(string.Format("Set brick at {0},{1},{2}", x,y,z));
         //if ( ( x < 0) || (y < 0) || (z < 0) || (x >= chunkWidth) || (y >= chunkHeight) || (z >= chunkDepth) )
@@ -700,7 +693,7 @@ public class SavedChunk
 
     public void SetBrickMap(BlockType[,,] map)
     {
-        MapSize = 20;// MyWorld.currentWorld.chunkSize;
+        MapSize = Chunk.ChunkSize;// MyWorld.currentWorld.chunkSize;
         BrickMap = new List<int>();
         for (int z = 0; z < MapSize; z++)
         {
@@ -721,7 +714,7 @@ public class SavedChunk
     public Vector3 Position;
 
     //[System.Xml.Serialization.XmlArray]
-    //public ItemType[,,] BrickMap;
+    //public BlockType[,,] BrickMap;
 
     public int MapSize;
     public List<int> BrickMap;
